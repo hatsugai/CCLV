@@ -5,12 +5,29 @@ open S
 open Ir
 open Compile
 open Regalloc
-open CodegenFenestra
+
+type machine =
+  Fenestra6502
+| MC6800
+
+let machine = ref Fenestra6502
 
 let usage_msg = "cclv <option>* <source>\n"
 
+let select_machine s =
+  if s="Fenestra6502" then
+    machine := Fenestra6502
+  else if s="6800" then
+    machine := MC6800
+  else
+    begin
+      fprintf stderr "unknown machine: %s\n" s;
+      exit 1
+    end
+
 let option_spec =
   [
+    ("-m", Arg.String select_machine, "");
     ("--debug", Arg.Unit (fun () -> Option.debug := true), "");
   ]
 
@@ -32,9 +49,23 @@ let parse path =
   fun_def_list
 
 let emit_prologue ch fun_def_list =
-  fprintf ch ".r65c02\n";
-  fprintf ch ".area _CODE\n";
-  fprintf ch ".globl main,getch,putch\n"
+  match !machine with
+    Fenestra6502 ->
+     fprintf ch ".r65c02\n";
+     fprintf ch ".area _CODE\n";
+     fprintf ch ".globl main,getch,putch\n"
+  | MC6800 ->
+     fprintf ch "WORKA = 0xFD\n";
+     fprintf ch "WORK = 0xFE\n";
+     fprintf ch ".area _CODE\n";
+     fprintf ch ".globl main,getch,putch\n"
+
+let codegen ch name params regmap inst_list =
+  match !machine with
+    Fenestra6502 ->
+     CodegenFenestra.codegen ch name params regmap inst_list
+  | MC6800 ->
+     Codegen6800.codegen ch name params regmap inst_list
 
 let main () =
   Arg.parse option_spec anon_fun usage_msg;
