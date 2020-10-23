@@ -8,6 +8,7 @@ open Regalloc
 
 type machine =
   Fenestra6502
+| W65C02S
 | MC6800
 
 let machine = ref Fenestra6502
@@ -17,6 +18,8 @@ let usage_msg = "cclv <option>* <source>\n"
 let select_machine s =
   if s="Fenestra6502" then
     machine := Fenestra6502
+  else if s="6502" then
+    machine := W65C02S
   else if s="6800" then
     machine := MC6800
   else
@@ -50,20 +53,16 @@ let parse path =
 
 let emit_prologue ch fun_def_list =
   match !machine with
-    Fenestra6502 ->
-     fprintf ch ".r65c02\n";
-     fprintf ch ".area _CODE\n";
-     fprintf ch ".globl main,getch,putch\n"
-  | MC6800 ->
-     fprintf ch "WORKA = 0xFD\n";
-     fprintf ch "WORK = 0xFE\n";
-     fprintf ch ".area _CODE\n";
-     fprintf ch ".globl main,getch,putch\n"
+  | Fenestra6502 -> CodegenFenestra.preamble ch
+  | W65C02S      -> Codegen6502.preamble ch
+  | MC6800       -> Codegen6800.preamble ch
 
 let codegen ch name params regmap inst_list =
   match !machine with
     Fenestra6502 ->
      CodegenFenestra.codegen ch name params regmap inst_list
+  | W65C02S ->
+     Codegen6502.codegen ch name params regmap inst_list
   | MC6800 ->
      Codegen6800.codegen ch name params regmap inst_list
 

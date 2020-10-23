@@ -488,3 +488,9 @@ let codegen ch name params regmap inst_list =
   fprintf ch "%s:\n" (Id.print_string name);
   prologue ();
   loop inst_list
+
+let preamble ch =
+  fprintf ch "WORKA = 0xFD\n";
+  fprintf ch "WORK = 0xFE\n";
+  fprintf ch ".area _CODE\n";
+  fprintf ch ".globl main,getch,putch\n"
